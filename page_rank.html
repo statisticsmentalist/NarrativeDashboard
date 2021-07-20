@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+     <!-- Required meta tags -->
+     <meta charset="utf-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+ 
+     <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+ 
+     <title>CS416 - Narrative Visualization - ccliang2</title>
+
+     <style>
+
+      .container1 {
+        float: left;
+      }
+
+      .container2 {
+        float: right;
+      }
+
+       .line--fade {
+        stroke-width: 1.4px;
+        opacity: 0.5;  
+      }
+        
+      .line--hover {
+        stroke-width: 2px;
+        opacity: 1.0;
+      }
+        
+      div.tooltip_value {
+        position: absolute;
+        text-align: center;
+        pointer-events: none;
+        min-width: 100px;
+        line-height: 1;
+        font-weight: bold;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        border-radius: 2px;
+      }
+      
+
+     </style>
+</head>
+<body onload="init()">
+<script>
+async function init() {
+  var data = await d3.csv("rank.csv")
+
+  data.sort(function(a,b){return d3.ascending(a.name, b.name)})
+
+  var xScale = d3.scaleBand().domain(Object.keys(data[0]).filter(elem=>elem!='name')).rangeRound([0,1500]).padding(0.4)
+  var yScale = d3.scaleLinear().domain([20,0]).rangeRound([580,0])
+    
+  var allGroup = data.map(elem=>elem['name'])
+
+    // add the options to the button
+    d3.select("#selectButton")
+      .selectAll('myOptions')
+     	.data(allGroup)
+      .enter()
+    	.append('option')
+      .text(function (d) { return d; }) // text showed in the menu
+      .attr("value", function (d) { return d; })
+
+      d3.select("#selectButton").on("change", function(d) {
+        var selectedOption = d3.select(this).property("value")
+        update(selectedOption)
+    })
+
+    function update(val)
+    {
+        d = data.filter(elem=>elem['name']==val)[0]
+
+        list = []
+        
+        Object.keys(d).filter(elem=>elem!='name').forEach(function(k)
+        {
+            list.push([k,d[k]])
+        })
+
+        d3.selectAll('g').remove();
+
+        d3.select('#bars').append('g').attr('transform','translate(40,10)').selectAll('rect')
+        .data(list).enter().append('rect')
+        .attr('x',function(k){
+            return xScale(k[0])
+        })
+        .attr('y',function(k){
+            return yScale(k[1])
+        })
+        .attr("width", xScale.bandwidth())
+        .attr("height", function(k) { 
+            return 580 - yScale(parseInt(k[1]));
+        })
+        .attr('fill',function(d,i){
+            return d3.schemeTableau10[i]
+        })
+
+        d3.select('g').selectAll('text').data(list).enter().append('text').attr("dy", ".75em")
+        .attr('x',function(k){
+            return xScale(k[0]) + xScale.bandwidth()/2
+        })
+        .attr('y',function(k){
+            return yScale(parseInt(k[1])) - 20
+        })
+        .attr("text-anchor", "middle")
+        .text(function(k) {
+            return k[1]
+        })
+        .attr('fill',function(d,i){
+            return d3.schemeTableau10[i]
+        })
+        .attr('font-size','18px')
+
+        d3.select('#bars').append('g').attr('transform','translate(40,590)')
+        .call(d3.axisBottom(xScale))
+        .selectAll('text').attr('fill',function(d,i){
+            return d3.schemeTableau10[i]
+        })
+        .attr('font-size','18px')
+        //.attr('transform','translate(24,590)')
+        
+    }
+
+    update(allGroup[0])
+}
+
+
+
+
+
+</script>
+<div class="row justify-content-left" style="margin-left:10px; margin-top:10px;"><h5> Technical Trend from Github Statistics Walkthrough - <b><u>Rank Comparison</u></b> on 2021 Q2</h5></div>
+<label style="text-align: left; margin-left:20px;">Select Programming Language: </label> <select id="selectButton" style="text-align: left; margin-left:10px;"></select>
+<br/>
+<div style="display:inline-block;">
+    <svg id="bars" height="660" width="1600px">
+
+    </svg>
+</div>
+<p style="text-align: left; margin-left:20px; margin-top:-20px; font-size: small;">
+  (Instruction: Lower number means a higher rank.)
+</p>
+<p style="text-align: left; margin-left:20px">
+  Did you find a programming language that its metric is interesting? In this final page you may check the metric rankings for each programming language by the drop downlist. 
+  <br><br>
+  For new adventurous learners, you could consider programming languages with high normalized change in star, pull, and push, while other new learners who would just want a steady and expected experience, programming languages with high actual count should be preferrable.
+  <br><br>
+  P.S. Did you notice the huge deep V-shaped lines pointing to Year 2019 Quarter 2 in all of the normalized change charts? It is probably due to the massive ransomeware attack on Github.
+</p>
+<button type="button" style="width:10%; margin-left:30px" onclick="window.location.href='index.html'"><b>Restart</b></button>
+</body>
+</html> 

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+     <!-- Required meta tags -->
+     <meta charset="utf-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+ 
+     <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+ 
+    <title>CS416 - Narrative Visualization - ccliang2</title>
+
+     <style>
+
+      .container1 {
+        float: left;
+      }
+
+      .container2 {
+        float: right;
+      }
+
+       .line--fade {
+        stroke-width: 1.4px;
+        opacity: 0.5;  
+      }
+        
+      .line--hover {
+        stroke-width: 2px;
+        opacity: 1.0;
+      }
+        
+      div.tooltip_value {
+        position: absolute;
+        text-align: center;
+        pointer-events: none;
+        min-width: 100px;
+        line-height: 1;
+        font-weight: bold;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        border-radius: 2px;
+      }
+      
+
+     </style>
+</head>
+<body onload="init()">
+<script>
+async function init() {
+  var data = await d3.csv("pull_etl.csv")
+
+  var group_data = Array.from(d3.group(data,d=>d.name))
+
+  group_data.sort(function(a,b){return d3.ascending(a[0], b[0])})
+
+  var names = group_data.map(elem=>elem[0])
+
+  function colorScale(lang)
+  {
+    return names.findIndex(function(d){return lang==d}) / names.length
+  }
+
+  var xLabel = ['2016_1', '2016_2', '2016_3', '2016_4', '2017_1', '2017_2',
+       '2017_3', '2017_4', '2018_1', '2018_2', '2018_3', '2018_4',
+       '2019_1', '2019_2', '2019_3', '2019_4', '2020_1', '2020_2',
+       '2020_3', '2020_4', '2021_1', '2021_2']
+
+  var xScale = d3.scaleBand().domain(xLabel).range([0,680])
+  var yScale = d3.scaleLinear().domain([0,1]).range([580,0])
+
+  xScale.invert = (function(){
+    var domain = xScale.domain()
+    var range = xScale.range()
+    var scale = d3.scaleQuantize().domain(range).range(domain)
+
+    return function(x){
+        return scale(x)
+    }
+})()
+
+var xPixelWidth = xScale('2016_2')-xScale('2016_1')
+
+var selected = null
+
+var focus_line = d3.select('#value_lines').append("g").attr('transform','translate(40,10)')                             
+    .style("display", "none");    
+
+    focus_line.append("circle")                               
+        .attr("class", "y")                               
+        .style("fill", "none")                            
+        .style("stroke", "blue") 
+        .style("stroke-width", 2)                           
+        .attr("r", 6);    
+
+var focus_count = d3.select('#count_lines').append("g").attr('transform','translate(40,10)')                             
+    .style("display", "none");    
+
+    focus_count.append("circle")                               
+        .attr("class", "y")                               
+        .style("fill", "none")                            
+        .style("stroke", "blue") 
+        .style("stroke-width", 2)                           
+        .attr("r", 6);   
+
+//normalized lines
+
+  d3.select('#value_lines').on("click", onclick).on("mousemove", mousemove)
+  .append('g').attr('transform','translate(40,10)')
+  .selectAll("line")
+  .attr("class", "line")
+  .data(group_data)
+  .enter()
+  .append("path")
+  .attr("d", function (d) {
+
+
+      var line = d3.line()//.curve(d3.curveBasis)
+          .x(d => xScale(d.time))
+          .y(d => yScale(d.value))
+          (d[1])
+          
+      return line
+  })
+  .attr("id",function(d){
+    return d[0]+'_value'
+  })
+  .attr("fill", "none")
+  .attr("stroke", function(d,i){
+    return d3.interpolateTurbo(colorScale(d[0]))//d3.interpolateTurbo(parseFloat(i)/group_data.length)
+  })
+  .attr("stroke-width", 1)
+  .on("mouseover", mouseover)
+  .on("mouseout",mouseout)
+   
+
+  d3.select('#value_lines').append('g')
+.attr('transform','translate(40,10)')
+.attr("stroke-width", 1)
+.call(d3.axisLeft(yScale).tickValues([0.25,0.5,0.75,1]))//.tickFormat(d3.format('~s')))
+
+d3.select('#value_lines').append('g')
+.attr('transform','translate(24,590)')
+.attr("stroke-width", 1)
+.call(d3.axisBottom(xScale))
+.selectAll("text")
+.style("text-anchor", "end")
+.attr("transform", "rotate(-65)")
+//.tickValues([10,20,50,100]).tickFormat(d3.format('~s')))
+
+d3.select('#value_lines').append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 00)
+        .attr("x",-310)
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("Normalized Change")
+        .style("font-size", "14px")
+
+d3.select('#value_lines').append("text")
+		.attr("x", 420)
+        .attr("y", 650)
+        .style("text-anchor", "middle")
+        .text("Year_Quarter");
+
+//count lines
+
+var yScale2 = d3.scaleLinear().domain([0,450000]).range([580,0])
+
+d3.select('#count_lines').on("click", onclick).on("mousemove", mousemove)
+  .append('g').attr('transform','translate(40,10)')
+  .selectAll("line")
+  .attr("class", "line")
+  .data(group_data)
+  .enter()
+  .append("path")
+  .attr("d", function (d) {
+
+      var line = d3.line()//.curve(d3.curveBasis)
+          .x(d => xScale(d.time))
+          .y(d => yScale2(d.count))
+          (d[1])
+          
+      return line
+  })
+  .attr("id",function(d){
+    return d[0] +'_count'
+  })
+  .attr("fill", "none")
+  .attr("stroke", function(d,i){
+    return d3.interpolateTurbo(colorScale(d[0]))
+  })
+  .attr("stroke-width", 1)
+  .on("mouseover", mouseover)
+  .on("mouseout",mouseout)
+  
+
+  d3.select('#count_lines').append('g')
+.attr('transform','translate(40,10)')
+.attr("stroke-width", 1)
+.call(d3.axisLeft(yScale2).tickValues([50000,150000,250000,350000,450000]))//.tickFormat(d3.format('~s')))
+.selectAll("text").attr("y", -12).attr("x", 8).attr("transform", "rotate(-90)")
+
+d3.select('#count_lines').append('g')
+.attr('transform','translate(24,590)')
+.attr("stroke-width", 1)
+.call(d3.axisBottom(xScale))//.tickValues([10,20,50,100]).tickFormat(d3.format('~s')))
+.selectAll("text")
+.style("text-anchor", "end")
+.attr("transform", "rotate(-65)")
+
+d3.select('#count_lines').append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 5)
+        .attr("x",-310)
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("Pulls")
+        .style("font-size", "14px")
+
+d3.select('#count_lines').append("text")
+		.attr("x", 420)
+        .attr("y", 650)
+        .style("text-anchor", "middle")
+        .text("Year_Quarter");
+
+var tooltip_value = d3.select("body").append("div")   
+    .attr("class", "tooltip_value")               
+    .style("opacity", 0);
+
+if(!sessionStorage.getItem('pull_animate'))
+{
+  sessionStorage.setItem('pull_animate',1)
+
+  names.forEach(function(d){
+  var temp = d3.select('#count_lines').select('#'+d+'_count')  
+  var totalLength = temp.node().getTotalLength()
+  temp
+    .attr("stroke-dasharray", totalLength + " " + totalLength)
+    .attr("stroke-dashoffset", totalLength)
+    .transition() // Call Transition Method
+    .duration(1500) // Set Duration timing (ms)
+    .ease(d3.easeLinear) // Set Easing option
+    .attr("stroke-dashoffset", 0);
+
+  var temp = d3.select('#value_lines').select('#'+d+'_value')  
+  var totalLength = temp.node().getTotalLength()
+  temp
+    .attr("stroke-dasharray", totalLength + " " + totalLength)
+    .attr("stroke-dashoffset", totalLength)
+    .transition() // Call Transition Method
+    .delay(1600)
+    .duration(1500) // Set Duration timing (ms)
+    .ease(d3.easeLinear) // Set Easing option
+    .attr("stroke-dashoffset", 0);
+})
+}
+
+
+d3.select('#legend').on('click',onclick).append('g').selectAll('circle')
+.data(group_data).enter().append('circle')
+.attr('cx',20)
+.attr('cy',function(d,i){ return 10 + i*25})
+.attr('r',8)
+.attr("id",function(d){
+    return d[0] + '_legend'
+  })
+.style('fill',function(d,i){
+  return d3.interpolateTurbo(colorScale(d[0]))
+})
+.on("mouseover", mouseover)
+.on("mouseout",mouseout)
+
+
+
+d3.select('#legend').append('g').selectAll('text')
+.data(group_data).enter().append('text')
+.attr('x',35)
+.attr('y',function(d,i){ return 15 + i*25})
+.attr('r',8)
+  .attr("id",function(d){
+    return d[0] + '_legendText'
+  })
+.text(function(d){
+  return d[0]
+})
+.style('fill',function(d,i){
+  return d3.interpolateTurbo(colorScale(d[0]))
+})
+.on("mouseover", mouseover)
+.on("mouseout",mouseout)
+
+
+//console.log(temp.nodes()[0].getTotalLength())
+/*
+temp.each(function(d,i){
+  if(d)
+  {
+    console.log(d.node())
+  }
+})*/
+
+/*
+var totalLength = temp.node().getTotalLength()
+temp
+	.attr("stroke-dasharray", totalLength + " " + totalLength)
+	.attr("stroke-dashoffset", totalLength)
+  .transition() // Call Transition Method
+	.duration(4000) // Set Duration timing (ms)
+	.ease(d3.easeLinear) // Set Easing option
+	.attr("stroke-dashoffset", 0);
+*/
+
+
+function mousemove(e)//,d)
+{
+  if(selected)
+  {
+    var x0 = d3.pointer(e)[0]
+    var name = selected.id.replace('_value','').replace('_count','').replace('_legendText','').replace('_legend','')
+    var d = group_data.find(elem=>elem[0]==name)
+    var idx = d[1].findIndex(elem=>elem['time']==xScale.invert(x0))
+
+    idx = (x0-xScale(d[1][idx]['time']) < xPixelWidth/2) ? idx-1: idx
+    
+    idx = idx<0? 0:idx
+    
+    data = d[1][idx]
+
+    focus_line.select("circle.y")                          
+              .attr("transform",                            
+                    "translate(" + xScale(data.time) + "," +        
+                                  yScale(data.value) + ")");   
+ 
+    focus_count.select("circle.y")                          
+              .attr("transform",                            
+                    "translate(" + xScale(data.time) + "," +        
+                                  yScale2(data.count) + ")");   
+
+    tooltip_value.html(data.name + '<br><br>Normalized Change: '+ Math.round(data.value*1000)/1000 + '<br><br>Pulls: '+ data.count + '<br><br>Year: '+ data.year + '<br><br>Quarter: ' + data.quarter) 
+    
+        .style("left", (e.pageX - 100) + "px")      
+        .style("top", (e.pageY + 20) + "px");
+    }
+}
+
+// mouseover function
+function mouseover(e,d) {
+
+  if (!selected)
+  {
+    /*
+    tooltip_value.transition()        
+                  .duration(100)      
+                  .style("opacity", .9);   
+
+    tooltip_value.html(d[0])// + "<br/>"  + Math.round(data.value*1000)/1000)  
+        .style("left", (e.pageX - 110) + "px")     
+        .style("top", (e.pageY - 15) + "px");
+*/
+
+        d3.selectAll('path')
+    .attr('stroke-opacity',function(i){
+      if(i)
+      {
+        if (i[0]==d[0])
+        { return 1 }
+        else
+        {return 0.2}
+      }
+    })
+    .attr('stroke-width',function(i){
+      if(i)
+      {
+        if (i[0]==d[0])
+        { return 2 }
+        else
+        {return 1}
+      }
+    })
+    
+    d3.select('#'+d[0]+'_value').raise()
+    d3.select('#'+d[0]+'_count').raise()
+
+    focus_line.raise()
+    focus_count.raise()
+
+    group_data.forEach(function(i){
+      var op = 0.2
+      if(i[0]==d[0])
+      {
+        op = 1
+      }
+      d3.select('#'+i[0]+'_legend').attr('opacity',op)
+      d3.select('#'+i[0]+'_legendText').attr('opacity',op)
+    })
+
+  }
+
+  }
+
+  function onclick(e)
+  {
+    if (e.srcElement.id.includes('_value') || e.srcElement.id.includes('_count') || e.srcElement.id.includes('_legend') || e.srcElement.id.includes('_legendText'))
+    {
+      tooltip_value.transition()        
+                  .duration(100)      
+                  .style("opacity", .9); 
+                  
+      name = e.srcElement.id.replace('_value','').replace('_count','').replace('_legendText','').replace('_legend','')
+      data = group_data.find(elem=>elem[0]==name)[1]
+
+      d3.selectAll('path')
+      .attr('stroke-opacity',function(i, idx){
+        if(i)
+        {        
+          if (i[0]==name)
+          { return 1 }
+          else
+          {return 0.2}
+        }
+      })
+      .attr('stroke-width',function(i){
+        if(i)
+        {
+          if (i[0]==name)
+          { return 4 }
+          else
+          {return 1}
+        }
+      })
+
+      var x0 = d3.pointer(e)[0]
+
+      var idx = data.findIndex(elem=>elem['time']==xScale.invert(x0)) 
+    
+    idx = (x0-xScale(data[idx]['time']) < xPixelWidth/2) ? idx-1: idx
+    
+    idx = idx<0? 0:idx
+      
+      data = data[idx]
+
+      focus_line.select("circle.y")                          
+                .attr("transform",                            
+                      "translate(" + xScale(data.time) + "," +        
+                                    yScale(data.value) + ")");   
+ 
+      focus_count.select("circle.y")                          
+              .attr("transform",                            
+                    "translate(" + xScale(data.time) + "," +        
+                                  yScale2(data.count) + ")");   
+
+    tooltip_value.html(data.name + '<br><br>Normalized Change: '+ Math.round(data.value*1000)/1000 + '<br><br>Pulls: '+ data.count + '<br><br>Year: '+ data.year + '<br><br>Quarter: ' + data.quarter) 
+        .style("left", (e.pageX - 100) + "px")     
+        .style("top", (e.pageY + 20) + "px");    
+ 
+        selected = e.srcElement
+        focus_line.style("display", null);
+        focus_count.style("display", null);
+
+        group_data.forEach(function(i){
+        var op = 0.2
+        if(i[0]==data.name)
+        {
+          op = 1
+        }
+        d3.select('#'+i[0]+'_legend').attr('opacity',op)
+        d3.select('#'+i[0]+'_legendText').attr('opacity',op)
+      })
+    } 
+    else
+    {
+      d3.selectAll('path')
+      .attr('stroke-opacity',function(i)
+      {
+        if(i)
+        {
+          return 1
+        }
+      })
+      .attr('stroke-width',function(i){
+        if(i)
+        {
+          return 1
+        }
+      })
+
+      tooltip_value.transition()        
+                .duration(100)      
+                .style("opacity", 0);
+
+      selected = null
+      focus_line.style("display", 'none');
+      focus_count.style("display", 'none');
+
+      group_data.forEach(function(i){
+        d3.select('#'+i[0]+'_legend').attr('opacity',1)
+        d3.select('#'+i[0]+'_legendText').attr('opacity',1)
+      })
+    }
+
+  }
+
+  // mouseout function
+  function mouseout(e,d) {
+
+    if(!selected)
+    {
+      tooltip_value.transition()        
+                .duration(100)      
+                .style("opacity", 0);     
+
+      d3.selectAll('path')
+      .attr('stroke-opacity',function(i)
+      {
+        if(i)
+        {
+          return 1
+        }
+      })
+      .attr('stroke-width',function(i){
+        if(i)
+        {
+          return 1
+        }
+      })
+
+      focus_line.style("display", "none");
+
+      group_data.forEach(function(i){
+      d3.select('#'+i[0]+'_legend').attr('opacity',1)
+      d3.select('#'+i[0]+'_legendText').attr('opacity',1)
+    })
+    }
+
+  }
+}
+
+</script>
+<div class="row justify-content-left" style="margin-left:10px; margin-top:10px;"><h5> Technical Trend from Github Statistics Walkthrough - <b><u>Pulls</u></b></h5></div>
+<div>
+  <div style="display:inline-block;">
+    <svg id="count_lines" height="660" width="720px">
+
+    </svg>
+  </div>
+  <div style="display:inline-block;">
+    <svg id="value_lines" height="660" width="720px">
+
+    </svg>
+  </div>
+  <div style="display:inline-block;">
+    <svg id="legend" height="660" width="200px">
+      
+    </svg>
+  </div>
+</div>
+<p style="text-align: left; margin-left:20px; font-size: small;">
+  (Instruction: Hover the mouse on the lines / legends to reveal the label. Click on them to lock on to a line then move the mouse left or right on the graph to explore the actual values. Click on white spaces on the graph to release the lock.)
+</p>
+<p style="text-align: left; margin-left:20px">
+  Github Pulls happen when other developers request the author to update the repository by their changes. It could be interpreted as the community activeness of the total repositories for a programming language. 
+  <br><br>
+  When the communities are actively contributing to some programming language's repositories, it could mean the communities are excited about the language and the authors could not keep up with releasing features or bug fixes.
+  <br><br>
+  Top 4 normalized changes of Github Pulls are Scala, Dart, TypeScript, and Kotlin.
+  <br><br>
+  Let's check Github Issues next!
+  </p>
+<button type="button" style="width:10%; margin-left:30px" onclick="window.location.href='page_issue.html'"><b>Next</b></button>
+</body>
+</html>
