@@ -237,6 +237,8 @@ if(!sessionStorage.getItem('pull_animate'))
 {
   sessionStorage.setItem('pull_animate',1)
 
+  var annot = false
+
   names.forEach(function(d){
   var temp = d3.select('#count_lines').select('#'+d+'_count')  
   var totalLength = temp.node().getTotalLength()
@@ -257,10 +259,73 @@ if(!sessionStorage.getItem('pull_animate'))
     .delay(1600)
     .duration(1500) // Set Duration timing (ms)
     .ease(d3.easeLinear) // Set Easing option
-    .attr("stroke-dashoffset", 0);
+    .attr("stroke-dashoffset", 0)
+    .on("end", function(){
+      if(!annot)
+      {
+        annot = true
+
+       showAnnotation()
+      }
+    });
 })
 }
+else
+{
+  showAnnotation()
+}
 
+if(sessionStorage.getItem('ransom_annote'))
+{
+  d3.select('#value_lines')
+      .append('g').attr('transform','translate(40,0)')
+      .append('rect')
+      .attr('width',xPixelWidth*3)
+      .attr('height',yScale(0)+10)
+      .attr('x',xScale('2019_2')-xPixelWidth*3/2)
+      .attr('y',0)
+      .attr('opacity',0.3)
+
+      d3.select('#value_lines').append("g").attr('transform','translate(40,10)')
+      .append('text')
+      .text('Ransomware')
+      .attr('fill','white')
+      .attr('x',xScale('2019_2')-46)
+      .attr('y',yScale(0.98))
+
+      d3.select('#value_lines').append("g").attr('transform','translate(40,10)')
+      .append('text')
+      .text('Attack')
+      .attr('fill','white')
+      .attr('x',xScale('2019_2')-46)
+      .attr('y',yScale(0.95))
+}
+
+function showAnnotation()
+{
+   d3.select('#value_lines')
+      .append('g').attr('transform','translate(40,0)')
+      .append('rect')
+      .attr('width',xPixelWidth*2)
+      .attr('height',yScale(0.6))
+      .attr('x',xScale('2021_2')-xPixelWidth)
+      .attr('y',0)
+      .attr('opacity',0.3)
+
+      d3.select('#value_lines').append("g").attr('transform','translate(40,10)')
+      .append('text')
+      .text('Top')
+      .attr('fill','white')
+      .attr('x',xScale('2021_2')-12)
+      .attr('y',yScale(0.66))
+
+      d3.select('#value_lines').append("g").attr('transform','translate(40,10)')
+      .append('text')
+      .text('Changes')
+      .attr('fill','white')
+      .attr('x',xScale('2021_2')-30)
+      .attr('y',yScale(0.63))
+}
 
 d3.select('#legend').on('click',onclick).append('g').selectAll('circle')
 .data(group_data).enter().append('circle')
