@@ -278,7 +278,7 @@ else
 if(sessionStorage.getItem('ransom_annote'))
 {
   d3.select('#value_lines')
-      .append('g').attr('transform','translate(40,0)')
+      .append('g').lower().attr('transform','translate(40,0)')
       .append('rect')
       .attr('width',xPixelWidth*3)
       .attr('height',yScale(0)+10)
@@ -304,7 +304,7 @@ if(sessionStorage.getItem('ransom_annote'))
 function showAnnotation()
 {
    d3.select('#value_lines')
-      .append('g').attr('transform','translate(40,0)')
+      .append('g').lower().attr('transform','translate(40,0)')
       .append('rect')
       .attr('width',xPixelWidth*2)
       .attr('height',yScale(0.6))
