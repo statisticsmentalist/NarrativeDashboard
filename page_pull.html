@@ -47,6 +47,10 @@
         border-radius: 2px;
       }
       
+      div.click_text{
+        position: absolute;
+        text-align: center;
+      }
 
      </style>
 </head>
@@ -232,6 +236,9 @@ d3.select('#count_lines').append("text")
 var tooltip_value = d3.select("body").append("div")   
     .attr("class", "tooltip_value")               
     .style("opacity", 0);
+
+var click_text = d3.select("body").append("div").attr('class','click_text').html('Click!')        
+    .style("opacity", 0)
 
 if(!sessionStorage.getItem('pull_animate'))
 {
@@ -465,6 +472,9 @@ function mouseover(e,d) {
       d3.select('#'+i[0]+'_legendText').attr('opacity',op)
     })
 
+    click_text.style('opacity',1)
+    .style("left", (e.pageX - 12) + "px")      
+    .style("top", (e.pageY + 24) + "px")
   }
 
   }
@@ -537,6 +547,10 @@ function mouseover(e,d) {
         d3.select('#'+i[0]+'_legend').attr('opacity',op)
         d3.select('#'+i[0]+'_legendText').attr('opacity',op)
       })
+
+      click_text.style('opacity',0)
+    .style("left", "0px")      
+    .style("top", "0px")
     } 
     else
     {
@@ -602,7 +616,9 @@ function mouseover(e,d) {
       d3.select('#'+i[0]+'_legendText').attr('opacity',1)
     })
     }
-
+    click_text.style('opacity',0)
+    .style("left", "0px")      
+    .style("top", "0px")
   }
 }
 
